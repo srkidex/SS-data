@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Serbian Ball Lifecycle</title>
+    <style>
+        body { background-color: #050505; margin: 0; overflow: hidden; font-family: sans-serif; background-size: cover; background-position: center; transition: background-image 0.5s ease-in-out; }
+        canvas { display: block; }
+        #ui { 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            color: #fff; /* We use white text so 'difference' turns it black on white bgs */
+            padding: 10px 20px; 
+            border-radius: 8px; 
+            pointer-events: none; 
+            font-weight: bold;
+            /* This makes the UI colors invert based on the background */
+            mix-blend-mode: difference; 
+            z-index: 100;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        Balls: <span id="count">0</span><br>
+        FPS: <span id="fps">0</span>
+    </div>
+    <canvas id="myCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+const countDisplay = document.getElementById("count");
+const fpsDisplay = document.getElementById("fps");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let balls = [];
+const MAX_BALLS = 101;
+
+// FPS Tracking Variables
+let lastTime = 0;
+let frameCount = 0;
+
+class Ball {
+    constructor() {
+        this.baseRadius = 15 + Math.random() * 15;
+        this.x = canvas.width / 2;
+        this.y = canvas.height / 2;
+        this.z = Math.random() * 200;
+        
+        // Burst velocity
+        this.vx = (Math.random() - 0.5) * 30;
+        this.vy = (Math.random() - 0.5) * 30;
+        this.vz = (Math.random() - 0.5) * 30;
+        
+        this.angle = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.25;
+        
+        this.gravity = 0.1;
+        this.bounce = -0.7;
+        this.bounceCount = 0;
+        this.isDead = false;
+    }
+
+    static spawn() {
+        if (balls.length < MAX_BALLS) {
+            balls.push(new Ball());
+        }
+    }
+
+    update() {
+    this.vy += this.gravity;
+    this.x += this.vx;
+    this.y += this.vy;
+    this.z += this.vz;
+    this.angle += this.rotationSpeed;
+
+    let scale = 1000 / (1000 + this.z);
+    let r = this.baseRadius * scale;
+
+    // 1. BOTTOM SIDE (Floor)
+    if (this.y + r > canvas.height) {
+        this.y = canvas.height - r;
+        this.vy *= this.bounce;
+        this.bounceCount++; // Only floor hits trigger a new ball spawn
+
+        if (this.bounceCount >= 3) {
+            this.isDead = true; 
+            Ball.spawn(); 
+        }
+    }
+
+    // 2. TOP SIDE (Ceiling) - NEW
+    if (this.y - r < 0) {
+        this.y = r;
+        this.vy *= this.bounce; // Simple bounce without incrementing count
+    }
+
+    // 3. LEFT & RIGHT SIDES (Walls)
+    if (this.x + r > canvas.width || this.x - r < 0) {
+        this.vx *= this.bounce; // Use bounce factor for consistency
+        this.x = this.x < r ? r : canvas.width - r;
+    }
+
+    // 4. DEPTH (Front & Back Walls)
+    if (this.z > 800 || this.z < -300) {
+        this.vz *= -1;
+    }
+}
+draw() {
+    let scale = 1000 / (1000 + this.z);
+    let r = this.baseRadius * scale;
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    
+    // --- 1. PRO DROP SHADOW ---
+    const shadowY = (canvas.height - this.y); 
+    const shadowWidth = r * 1.5;
+    // Shadow fades if ball is high
+    const shadowOpacity = Math.max(0, 0.4 * (1 - this.z / 1000) * (1 - (canvas.height - this.y)/canvas.height));
+    
+    ctx.beginPath();
+    ctx.ellipse(0, shadowY, shadowWidth, shadowWidth * 0.2, 0, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(0, 0, 0, ${shadowOpacity})`;
+    ctx.fill();
+
+    // --- 2. BALL CONTAINER (CLIPPING) ---
+    ctx.beginPath();
+    ctx.arc(0, 0, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    // --- 3. ROTATING SERBIAN FLAG BASE ---
+    ctx.rotate(this.angle);
+    const section = (r * 2) / 3;
+    
+    // Red
+    ctx.fillStyle = "#C6363C"; 
+    ctx.fillRect(-r * 2, -r, r * 4, section);
+    // Blue
+    ctx.fillStyle = "#0C4076"; 
+    ctx.fillRect(-r * 2, -r + section, r * 4, section);
+    // White
+    ctx.fillStyle = "#FFFFFF"; 
+    ctx.fillRect(-r * 2, -r + (section * 2), r * 4, section);
+
+    // --- 4. THE DOUBLE-HEADED EAGLE ORNAMENT (Vector Drawn) ---
+    // Place it slightly left-of-center as per the actual flag layout
+    ctx.save();
+    ctx.translate(-r * 0.35, 0); 
+    ctx.scale(r * 0.008, r * 0.008); // Scale down the vector path relative to 'r'
+
+    ctx.fillStyle = "#FFFFFF"; // Eagle color
+    ctx.beginPath();
+    
+    // Standardizing the vector origin for drawing
+    // Drawing a simplified but clear version of the white eagle path
+    
+    // Left Wing
+    ctx.moveTo(-15, -15);
+    ctx.quadraticCurveTo(-40, -10, -35, 20);
+    ctx.lineTo(-20, 10);
+    ctx.quadraticCurveTo(-15, 20, -10, 15);
+    
+    // Right Wing
+    ctx.moveTo(15, -15);
+    ctx.quadraticCurveTo(40, -10, 35, 20);
+    ctx.lineTo(20, 10);
+    ctx.quadraticCurveTo(15, 20, 10, 15);
+
+    // Body/Shield Base
+    ctx.moveTo(0, 5);
+    ctx.lineTo(-10, 20);
+    ctx.lineTo(0, 30);
+    ctx.lineTo(10, 20);
+    ctx.closePath();
+    ctx.fill();
+
+    // Heads
+    ctx.moveTo(-5, -20);
+    ctx.lineTo(-12, -30); // Left Head beak
+    ctx.lineTo(-5, -35);
+    ctx.closePath();
+    
+    ctx.moveTo(5, -20);
+    ctx.lineTo(12, -30); // Right Head beak
+    ctx.lineTo(5, -35);
+    ctx.closePath();
+    
+    // Crown simplified
+    ctx.moveTo(-5, -38);
+    ctx.lineTo(0, -45);
+    ctx.lineTo(5, -38);
+    ctx.closePath();
+    
+    ctx.fill();
+    ctx.restore();
+
+    // --- 5. 3D SHADING OVERLAY (NON-ROTATING) ---
+    // Reset rotation for fixed lighting relative to "camera"
+    ctx.rotate(-this.angle); 
+    
+    // Global Ambient Occlusion (Dark edges)
+    const shadowGrad = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r);
+    shadowGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0.5)');
+    ctx.fillStyle = shadowGrad;
+    ctx.fill();
+
+    // Specular Highlight (The "Shine")
+    const shineGrad = ctx.createRadialGradient(-r * 0.4, -r * 0.4, 0, -r * 0.4, -r * 0.4, r * 0.8);
+    shineGrad.addColorStop(0, 'rgba(255, 255, 255, 0.6)'); // Shine color
+    shineGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = shineGrad;
+    ctx.fill();
+
+    ctx.restore();
+}
+}
+
+// Initial Burst
+for(let i = 0; i < 101; i++) {
+    Ball.spawn();
+}
+
+function animate(currentTime) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // --- FPS CALCULATION ---
+    if (!lastTime) lastTime = currentTime;
+    const delta = currentTime - lastTime;
+    frameCount++;
+
+    if (delta >= 1000) { 
+        fpsDisplay.innerText = frameCount;
+        frameCount = 0;
+        lastTime = currentTime;
+    }
+
+    // --- BALL LOGIC ---
+    balls = balls.filter(ball => !ball.isDead);
+    countDisplay.innerText = balls.length;
+
+    balls.sort((a, b) => b.z - a.z);
+
+    balls.forEach(ball => {
+        ball.update();
+        ball.draw();
+    });
+
+    requestAnimationFrame(animate);
+}
+
+// Start the loop
+requestAnimationFrame(animate);
+
+// Resize handling
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});
+
+// Background Switcher
+document.addEventListener("DOMContentLoaded", function() {
+    const images = [
+        'url("pictures/bg1.jpg")',
+        'url("pictures/bg2.jpg")',
+        'url("pictures/bg3.jpg")',
+        'url("pictures/bg4.jpg")'
+    ];
+    let imgIdx = 0;
+    function changeBackground() {
+        document.body.style.backgroundImage = images[imgIdx];
+        imgIdx = (imgIdx + 1) % images.length;
+    }
+    changeBackground();
+    setInterval(changeBackground, 4000);
+});
+</script>
+</body>
+</html>

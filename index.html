@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>SERB-SCREENS</title>
+    <link href="bootstrap.min.css" rel="stylesheet">
+    <script src="bootstrap.bundle.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <script src="app.js"></script>
+
+</head>
+<body>
+    <div class="container mt-1">
+    <div class="row">
+
+        <div class="col-sm-12 text-center">
+            <h1>SERB-SCREENS</h1>
+        </div>
+        <div class="col-6">
+            <button id="myBtn">Info</button>
+        </div>
+        <div class="col-6">
+            <h2>by <a href="https://srki-dex.rs" data-external-link>srki-dex.rs</a></h2>
+        </div>
+
+        <br><br>
+
+        <label>Choose a Screen Saver:</label>
+        <br>
+        <ul id="screensavers">
+            <li><a href="javascript:void(0)" onclick="openScreenSaver('NATURE')">SERBIAN NATURE</a></li>
+            <li><a href="javascript:void(0)" onclick="openScreenSaver('FAMOUSPPL')">FAMOUS SERBIANS</a></li>
+            <li><a href="javascript:void(0)" onclick="openScreenSaver('CUISINE')">SERBIAN CUISINE</a></li>
+            <li><a href="javascript:void(0)" onclick="openScreenSaver('STADIUM')">SERBIAN NATIONAL STADIUM</a></li>
+            <li><a href="javascript:void(0)" onclick="openScreenSaver('MATRIX')">CYRILLIC MATRIX</a></li>
+        </ul>
+
+        <div id="myModal" class="modal">
+            <!-- Modal content -->
+
+            <div class="modal-content">
+                <p>
+                    <p class="text-center"><b>SERB-SCREENS</b> is a collection of screen savers that celebrate Serbian culture, history, and natural beauty. Each screen saver features stunning visuals and interesting facts about Serbia!</p>
+                </p>
+            </div>
+            <span class="close">&times;</span>
+        </div>
+
+    </div>
+    </div>
+
+<script>
+// Initialize the Screen API once at the top of your script
+nw.Screen.Init();
+
+function openScreenSaver(screenSaverName) {
+    var currentWin = nw.Window.get();
+    var openedWindows = []; // Track all screensaver windows
+    var screens = nw.Screen.screens;
+
+    screens.forEach(function(screen, index) {
+        // Use the bounds of the specific monitor
+        var pos = screen.bounds;
+
+        nw.Window.open('SS-data-main/' + screenSaverName + '.html', {
+            focus: true,
+            fullscreen: true,
+            // Explicitly position the window on the correct monitor
+            x: pos.x,
+            y: pos.y,
+            width: pos.width,
+            height: pos.height
+        }, function(new_win) {
+            openedWindows.push(new_win);
+            console.log("Screensaver opened on monitor " + index);
+
+            new_win.once('loaded', function() {
+                // Close ALL screensaver windows if Escape is pressed on ANY window
+                new_win.window.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape' || event.keyCode === 27) {
+                        closeAllScreensavers();
+                    }
+                });
+            });
+
+            // If the user manually closes one window, close them all
+            new_win.on('close', function() {
+                closeAllScreensavers();
+            });
+        });
+    });
+
+    // Helper to clean up all windows at once
+    function closeAllScreensavers() {
+        openedWindows.forEach(function(win) {
+            try { win.close(true); } catch (e) { /* window might already be closed */ }
+        });
+        openedWindows = []; // Reset array
+    }
+
+    // Ensure screensavers close if the main app window is closed
+    currentWin.on('close', function() {
+        closeAllScreensavers();
+        this.close(true);
+    });
+}
+</script>
+
+<script>
+// MODAL HANDLER
+// Get the modal
+var modal = document.getElementById("myModal");
+
+// Get the button that opens the modal
+var btn = document.getElementById("myBtn");
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// When the user clicks on the button, open the modal
+btn.onclick = function() {
+  modal.style.display = "block";
+}
+
+// When the user clicks on <span> (x), close the modal
+span.onclick = function() {
+  modal.style.display = "none";
+}
+
+// When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+
+
+// EXTERNAL LINKS HANDLER
+document.addEventListener('DOMContentLoaded', (event) => {
+    // Select all elements marked for external linking
+    const externalLinks = document.querySelectorAll('[data-external-link]');
+
+    externalLinks.forEach(link => {
+        link.addEventListener('click', (evt) => {
+            // Prevent the default NW.js navigation behavior
+            evt.preventDefault();
+            // Get the URL from the href attribute
+            const url = evt.currentTarget.href;
+            // Open the URL in the system's default browser
+            nw.Shell.openExternal(url);
+        });
+    });
+});
+</script>
+</body>
+</html>
