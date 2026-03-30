@@ -2,8 +2,8 @@
   "name": "srkidex-serb-screens",
   "main": "SS-data-main/index.html",
   "window": {
-    "width": 320,
-    "height": 240,
+    "width": 1280,
+    "height": 720,
     "icon": "SS-data-main/logo.png",
     "title": "SERB-SCREENS",
     "position": "center",

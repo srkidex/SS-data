@@ -27,6 +27,10 @@ h2{
 }
 
 
+.logoWrap{
+  width: 420px;
+}
+
 
 
 /* The Modal (background) */
@@ -51,7 +55,7 @@ h2{
   padding:10px;
   border: 1px solid #888;
   width: 100%;
-  height: 170px;
+  height: 650px;
 }
 
 /* The Close Button */
