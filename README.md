@@ -6,16 +6,12 @@
 
 Serb Screens is a NW.js web / js app that acts as a screen saver on all monitors
 
-1. 
+1. Serbian Cyrillic Matrix
 
-2. 
+2. Serbian National Stadiums
 
-3. 
+3. Serbian Authentic Cuisine
 
-4. Serbian National Stadium
----
-
-5. Cyrillic Matrix
 ---
 
 ## Installation
